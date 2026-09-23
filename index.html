@@ -8,7 +8,7 @@
 <style>
 :root{
   --bg:#f0f0f0; --panel:#fff; --text:#1a202c; --muted:#718096; --accent:#0078d4;
-  --accent-hover:#106ebe; --danger:#dc2626; --border:#e0e0e0; --card-dark:#1b2a47;
+  --accent-hover:#106ebe; --danger:#dc2626; --border:#e0e0e0;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#17181a; --panel:#232427; --text:#eef0f2; --muted:#9aa3ad; --border:#33353a; } }
 :root[data-theme="dark"]{ --bg:#17181a; --panel:#232427; --text:#eef0f2; --muted:#9aa3ad; --border:#33353a; }
@@ -16,30 +16,37 @@
 body{font-family:-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--text);
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);}
 button{cursor:pointer; font-family:inherit;} input,select{font-family:inherit;}
+svg.icon{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0;}
 .app{display:flex; height:100vh; height:100%;}
-.sidebar{width:210px; background:#2d2d2d; color:#fff; flex-shrink:0; display:flex; flex-direction:column; overflow-y:auto;}
-.sidebar h1{font-size:15px; padding:16px 14px 8px; margin:0;}
-.nav-btn{background:transparent; border:none; color:#b0b0b0; text-align:left; padding:11px 16px; font-size:14px; border-left:3px solid transparent;}
-.nav-btn:hover{background:#3a3a3a; color:#fff;}
-.nav-btn.active{background:#3a3a3a; color:#fff; border-left-color:var(--accent);}
-.nav-btn:disabled{opacity:.4;}
+.sidebar{width:210px; background:#1c1c1e; color:#fff; flex-shrink:0; display:flex; flex-direction:column; overflow-y:auto;}
+.sidebar h1{font-size:15px; padding:16px 14px 8px; margin:0; display:flex; align-items:center; gap:8px;}
+.nav-btn{background:transparent; border:none; color:#9a9a9e; text-align:left; padding:10px 16px; font-size:13.5px; border-left:3px solid transparent; display:flex; align-items:center; gap:10px;}
+.nav-btn:hover{background:#2a2a2d; color:#fff;}
+.nav-btn.active{background:#2a2a2d; color:#fff; border-left-color:var(--accent);}
+.nav-btn:disabled{opacity:.35;}
 .sb-section{padding:10px 14px;}
-.sb-btn{width:100%; background:#404040; color:#fff; border:none; border-radius:5px; padding:9px; font-size:12.5px; margin-bottom:8px;}
+.sb-btn{width:100%; background:#2f2f33; color:#fff; border:none; border-radius:6px; padding:9px; font-size:12.5px; margin-bottom:8px;}
 .sb-btn.primary{background:var(--accent);} .sb-btn:disabled{opacity:.4;}
-.tenant-box{background:#3a3a3a; border-radius:5px; padding:10px 12px; font-size:11px; color:#aaa; margin-bottom:8px; word-break:break-all;}
+.tenant-box{background:#2a2a2d; border-radius:6px; padding:10px 12px; font-size:11px; color:#aaa; margin-bottom:8px; word-break:break-all;}
+.log-dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; margin-top:5px;}
 .main{flex:1; overflow-y:auto; padding:26px;}
 .page{display:none;} .page.active{display:block;}
 h2{margin:0 0 6px; font-size:26px;} .sub{color:var(--muted); margin:0 0 18px; font-size:14px;}
-.panel{background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:18px;}
-.grid3{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:14px;}
-.grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;}
-@media (max-width:900px){.grid2,.grid3{grid-template-columns:1fr 1fr;}}
-.card{background:var(--card-dark); color:#fff; border-radius:8px; padding:16px;}
-.card .label{color:#a0aec0; font-size:12.5px; margin-bottom:6px;} .card .num{font-size:28px; font-weight:700;}
-.row{display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;}
-input[type=text]{flex:1; min-width:180px; padding:8px 10px; border:1px solid var(--border); border-radius:5px; background:var(--panel); color:var(--text);}
-select{padding:8px 10px; border:1px solid var(--border); border-radius:5px; background:var(--panel); color:var(--text);}
-.btn{background:var(--accent); color:#fff; border:none; border-radius:5px; padding:9px 16px; font-size:13.5px;}
+.panel{background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:18px;}
+.stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px;}
+.stat-grid.mini{grid-template-columns:repeat(6,1fr);}
+.stat-grid.tri{grid-template-columns:repeat(3,1fr);}
+@media (max-width:1000px){.stat-grid{grid-template-columns:repeat(2,1fr);} .stat-grid.mini{grid-template-columns:repeat(3,1fr);}}
+.stat-card{border-radius:12px; padding:16px; color:#fff; position:relative; overflow:hidden;}
+.stat-card .icon-badge{width:34px; height:34px; border-radius:9px; background:rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; margin-bottom:10px;}
+.stat-card .label{font-size:12px; opacity:.85; margin-bottom:2px;}
+.stat-card .num{font-size:26px; font-weight:700; line-height:1.1;}
+.stat-card .num.small{font-size:18px;}
+.section-title{font-size:13px; font-weight:600; margin:22px 0 10px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;}
+.row{display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; align-items:center;}
+input[type=text]{flex:1; min-width:180px; padding:8px 10px; border:1px solid var(--border); border-radius:6px; background:var(--panel); color:var(--text);}
+select{padding:8px 10px; border:1px solid var(--border); border-radius:6px; background:var(--panel); color:var(--text);}
+.btn{background:var(--accent); color:#fff; border:none; border-radius:6px; padding:9px 16px; font-size:13.5px;}
 .btn.danger{background:var(--danger);} .btn.secondary{background:#eee; color:#333;} .btn:disabled{opacity:.5;}
 table{width:100%; border-collapse:collapse; font-size:13px;}
 th{text-align:left; background:rgba(128,128,128,.08); padding:8px; border-bottom:1px solid var(--border);}
@@ -49,15 +56,26 @@ td{padding:8px; border-bottom:1px solid var(--border);}
 .pill.ok{background:#c6f6d5; color:#22543d;} .pill.no{background:#fed7d7; color:#822727;}
 .modal-bg{display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); align-items:center; justify-content:center; z-index:50; padding:16px;}
 .modal-bg.show{display:flex;}
-.modal{background:var(--panel); border-radius:8px; padding:24px; max-width:600px; width:100%; max-height:85vh; overflow-y:auto;}
+.modal{background:var(--panel); border-radius:10px; padding:24px; max-width:600px; width:100%; max-height:85vh; overflow-y:auto;}
 .svc-row{display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); font-size:13.5px;}
 .toast-wrap{position:fixed; bottom:16px; right:16px; z-index:100; display:flex; flex-direction:column; gap:8px;}
 .toast{background:#1b2a47; color:#fff; padding:12px 16px; border-radius:8px; font-size:13px; max-width:340px;}
 .playbook-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px;}
-.playbook-btn{background:var(--card-dark); color:#fff; border:none; border-radius:8px; padding:18px; text-align:left;}
-.pb-desc{font-size:12px; opacity:.7; margin-top:8px;}
+.playbook-btn{background:#1b2a47; color:#fff; border:none; border-radius:10px; padding:16px; text-align:left; display:flex; gap:12px; align-items:flex-start;}
+.playbook-btn .icon-badge{width:32px; height:32px; border-radius:8px; background:rgba(255,255,255,.15); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:16px;}
+.pb-desc{font-size:11.5px; opacity:.65; margin-top:4px; font-family:monospace;}
 .hint{font-size:12px; color:var(--muted);}
-.warn-banner{background:var(--danger); color:#fff; border-radius:8px; padding:16px; margin-bottom:20px; font-size:13.5px;}
+.warn-banner{background:var(--danger); color:#fff; border-radius:10px; padding:16px; margin-bottom:20px; font-size:13.5px;}
+.log-toolbar{display:flex; gap:8px; margin-bottom:12px; align-items:center;}
+.log-list{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px; background:var(--panel); border:1px solid var(--border); border-radius:10px; max-height:70vh; overflow-y:auto;}
+.log-entry{padding:7px 12px; border-bottom:1px solid var(--border); display:flex; gap:8px;}
+.log-entry .t{color:var(--muted); flex-shrink:0;}
+.log-entry .m{white-space:pre-wrap; word-break:break-all;}
+.log-entry.info .log-dot{background:#3b82f6;}
+.log-entry.success .log-dot{background:#22c55e;}
+.log-entry.warn .log-dot{background:#f59e0b;}
+.log-entry.error .log-dot{background:#ef4444;} .log-entry.error .m{color:#ef4444;}
+.log-count-badge{background:var(--danger); color:#fff; font-size:10px; border-radius:8px; padding:1px 6px; margin-left:auto;}
 </style>
 </head>
 <body>
@@ -75,35 +93,71 @@ td{padding:8px; border-bottom:1px solid var(--border);}
       <button class="nav-btn" data-page="dashboard" disabled id="navDash">Dashboard</button>
       <button class="nav-btn" data-page="devices" disabled id="navDevices">Device Offboarding</button>
       <button class="nav-btn" data-page="playbooks" disabled id="navPlaybooks">Playbooks</button>
+      <button class="nav-btn" data-page="logs" id="navLogs">Logs <span class="log-count-badge" id="logErrCount" style="display:none">0</span></button>
     </div>
   </div>
 
   <div class="main">
     <div class="page active" id="page-home">
       <h2>Device Offboarding Manager</h2>
-      <p class="sub">Static web edition — matches the original PowerShell tool's Graph queries exactly</p>
+      <p class="sub">Static web edition — matches the original PowerShell tool's Graph queries</p>
       <div class="warn-banner"><b>⚠ Caution:</b> Deletion operations are permanent. Test in a non-production tenant first.</div>
       <div class="panel">
         <p>Requires an Entra ID App Registration, platform type <b>SPA</b>, redirect URI = this page's URL. Delegated permissions: <code>Device.Read.All, DeviceManagementManagedDevices.ReadWrite.All, DeviceManagementServiceConfig.ReadWrite.All, DeviceManagementConfiguration.Read.All, DeviceManagementApps.Read.All, User.Read, Group.Read.All, BitlockerKey.Read.All</code></p>
         <div class="field" style="margin-top:14px"><label class="hint">Client ID</label><br><input type="text" id="cfgClientId" placeholder="app registration client id" style="width:100%; margin-top:4px;"></div>
-        <div class="field" style="margin-top:10px"><label class="hint">Tenant ID (or 'organizations')</label><br><input type="text" id="cfgTenantId" placeholder="tenant id" style="width:100%; margin-top:4px;"></div>
+        <div class="field" style="margin-top:10px"><label class="hint">Tenant ID</label><br><input type="text" id="cfgTenantId" placeholder="tenant id" value="organizations" style="width:100%; margin-top:4px;"></div>
       </div>
     </div>
 
     <div class="page" id="page-dashboard">
       <h2>Dashboard</h2>
-      <p class="sub">Single $batch call, matching Update-DashboardStatistics <button class="btn secondary" id="refreshDash" style="float:right">Refresh</button></p>
-      <div class="grid3">
-        <div class="card"><div class="label">Intune Devices</div><div class="num" id="statIntune">—</div></div>
-        <div class="card"><div class="label">Autopilot Devices</div><div class="num" id="statAutopilot">—</div></div>
-        <div class="card"><div class="label">Entra ID Devices</div><div class="num" id="statEntra">—</div></div>
-        <div class="card"><div class="label">Personal / Corporate</div><div class="num" id="statOwnership" style="font-size:18px">—</div></div>
+      <p class="sub">Real-time device statistics <button class="btn secondary" id="refreshDash" style="float:right">↻ Refresh</button></p>
+
+      <div class="stat-grid">
+        <div class="stat-card" style="background:linear-gradient(135deg,#3b82f6,#2563eb)">
+          <div class="icon-badge"><svg class="icon" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 18h.01"/></svg></div>
+          <div class="label">Intune Devices</div><div class="num" id="statIntune">—</div>
+        </div>
+        <div class="stat-card" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed)">
+          <div class="icon-badge"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2l9 4.9v10.2L12 22l-9-4.9V6.9z"/><path d="M12 22V12M3 6.9L12 12l9-5.1"/></svg></div>
+          <div class="label">Autopilot Devices</div><div class="num" id="statAutopilot">—</div>
+        </div>
+        <div class="stat-card" style="background:linear-gradient(135deg,#14b8a6,#0d9488)">
+          <div class="icon-badge"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg></div>
+          <div class="label">Entra ID Devices</div><div class="num" id="statEntra">—</div>
+        </div>
+        <div class="stat-card" style="background:linear-gradient(135deg,#64748b,#475569)">
+          <div class="icon-badge"><svg class="icon" viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg></div>
+          <div class="label">Personal / Corporate</div><div class="num small" id="statOwnership">— / —</div>
+        </div>
       </div>
-      <div class="grid3">
-        <div class="card"><div class="label">Stale &gt; 30 days</div><div class="num" id="stat30">—</div></div>
-        <div class="card"><div class="label">Stale &gt; 90 days</div><div class="num" id="stat90">—</div></div>
-        <div class="card"><div class="label">Stale &gt; 180 days</div><div class="num" id="stat180">—</div></div>
+
+      <div class="section-title">Stale devices (by last Intune sync)</div>
+      <div class="stat-grid tri">
+        <div class="stat-card" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+          <div class="icon-badge"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+          <div class="label">Not synced &gt; 30 days</div><div class="num" id="stat30">—</div>
+        </div>
+        <div class="stat-card" style="background:linear-gradient(135deg,#f97316,#c2410c)">
+          <div class="icon-badge"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+          <div class="label">Not synced &gt; 90 days</div><div class="num" id="stat90">—</div>
+        </div>
+        <div class="stat-card" style="background:linear-gradient(135deg,#ef4444,#b91c1c)">
+          <div class="icon-badge"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+          <div class="label">Not synced &gt; 180 days</div><div class="num" id="stat180">—</div>
+        </div>
       </div>
+
+      <div class="section-title">Platform breakdown (Intune)</div>
+      <div class="stat-grid mini">
+        <div class="stat-card" style="background:#0078d4"><div class="label">Windows</div><div class="num small" id="osWin">—</div></div>
+        <div class="stat-card" style="background:#555555"><div class="label">macOS</div><div class="num small" id="osMac">—</div></div>
+        <div class="stat-card" style="background:#a2aaad"><div class="label">iOS</div><div class="num small" id="osIos">—</div></div>
+        <div class="stat-card" style="background:#3ddc84; color:#0b3d1f"><div class="label">Android</div><div class="num small" id="osAndroid">—</div></div>
+        <div class="stat-card" style="background:#e95420"><div class="label">Linux</div><div class="num small" id="osLinux">—</div></div>
+        <div class="stat-card" style="background:#64748b"><div class="label">Other</div><div class="num small" id="osOther">—</div></div>
+      </div>
+      <p class="hint" id="dashUpdated" style="margin-top:14px"></p>
     </div>
 
     <div class="page" id="page-devices">
@@ -126,16 +180,31 @@ td{padding:8px; border-bottom:1px solid var(--border);}
 
     <div class="page" id="page-playbooks">
       <h2>Playbooks</h2>
-      <p class="sub">Matching the original's Graph queries exactly. Note: 5 playbooks from the original (Outdated OS, EOL devices, BitLocker/FileVault key reports, corporate-identifier stale) aren't included here — they need reference data (EOL date tables, key-vault access) beyond a straight query port.</p>
+      <p class="sub">Matching the original's Graph queries. If a playbook returns 0 rows, check the Logs page — it shows the exact filter and raw count returned by Graph, so you can tell a genuine zero-match from an error.</p>
       <div class="playbook-grid">
-        <button class="playbook-btn" data-pb="autopilotNotIntune">Autopilot Not in Intune<div class="pb-desc">Get-AutopilotNotIntuneDevices</div></button>
-        <button class="playbook-btn" data-pb="intuneNotAutopilot">Intune Not in Autopilot<div class="pb-desc">Get-IntuneNotAutopilotDevices</div></button>
-        <button class="playbook-btn" data-pb="corporate">Corporate Devices<div class="pb-desc">Get-CorporateDevices</div></button>
-        <button class="playbook-btn" data-pb="personal">Personal Devices<div class="pb-desc">Get-PersonalDevices</div></button>
-        <button class="playbook-btn" data-pb="stale">Stale Devices (30d)<div class="pb-desc">Get-StaleDevices</div></button>
-        <button class="playbook-btn" data-pb="osWindows">Windows Devices<div class="pb-desc">Get-OSSpecificDevices</div></button>
+        <button class="playbook-btn" data-pb="autopilotNotIntune"><div class="icon-badge">📋</div><div><div>Autopilot Not in Intune</div><div class="pb-desc">Get-AutopilotNotIntuneDevices</div></div></button>
+        <button class="playbook-btn" data-pb="intuneNotAutopilot"><div class="icon-badge">📋</div><div><div>Intune Not in Autopilot</div><div class="pb-desc">Get-IntuneNotAutopilotDevices</div></div></button>
+        <button class="playbook-btn" data-pb="corporate"><div class="icon-badge">🏢</div><div><div>Corporate Devices</div><div class="pb-desc">Get-CorporateDevices</div></div></button>
+        <button class="playbook-btn" data-pb="personal"><div class="icon-badge">👤</div><div><div>Personal Devices</div><div class="pb-desc">Get-PersonalDevices</div></div></button>
+        <button class="playbook-btn" data-pb="stale"><div class="icon-badge">⏱</div><div><div>Stale Devices (30d)</div><div class="pb-desc">Get-StaleDevices</div></div></button>
+        <button class="playbook-btn" data-pb="osWindows"><div class="icon-badge">🖥</div><div><div>Windows Devices</div><div class="pb-desc">Get-OSSpecificDevices</div></div></button>
       </div>
       <div id="pbResults" style="margin-top:20px"></div>
+    </div>
+
+    <div class="page" id="page-logs">
+      <h2>Logs</h2>
+      <p class="sub">Every connection attempt, Graph request, and error — timestamped, in order.</p>
+      <div class="log-toolbar">
+        <button class="btn secondary" id="clearLogs">Clear</button>
+        <button class="btn secondary" id="copyLogs">Copy all</button>
+        <select id="logFilter" style="margin-left:auto">
+          <option value="all">All levels</option>
+          <option value="error">Errors only</option>
+          <option value="warn">Warnings + Errors</option>
+        </select>
+      </div>
+      <div class="log-list" id="logList"></div>
     </div>
   </div>
 </div>
@@ -143,7 +212,7 @@ td{padding:8px; border-bottom:1px solid var(--border);}
 <div class="modal-bg" id="confirmModal">
   <div class="modal">
     <h3>Confirm Device Offboarding</h3>
-    <p class="hint" style="color:var(--danger)">This action cannot be undone. Matches the original's confirmation dialog.</p>
+    <p class="hint" style="color:var(--danger)">This action cannot be undone.</p>
     <div id="svcList"></div>
     <p style="font-size:13px; font-weight:600; margin-top:16px; margin-bottom:6px; color:var(--danger)">Type OFFBOARD to confirm:</p>
     <input type="text" id="confirmText" style="width:100%; margin-bottom:16px;">
@@ -157,15 +226,31 @@ td{padding:8px; border-bottom:1px solid var(--border);}
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
-// ===== Config / Auth (interactive only, MSAL.js public client) =====
-let msalInstance=null, account=null;
-if(typeof msal === 'undefined'){
-  window.addEventListener('DOMContentLoaded', ()=>toast("MSAL library failed to load — check your internet connection and reload the page."));
+// ===== Logging system =====
+let logs=[]; let logErrCount=0;
+function log(level, msg){
+  const entry={time:new Date().toLocaleTimeString(), level, msg};
+  logs.push(entry);
+  if(logs.length>800) logs.shift();
+  if(level==='error'){ logErrCount++; const b=document.getElementById('logErrCount'); if(b){ b.style.display='inline'; b.textContent=logErrCount; } }
+  renderLogs();
 }
-const DELEGATED_SCOPES=["Device.Read.All","DeviceManagementManagedDevices.ReadWrite.All","DeviceManagementServiceConfig.ReadWrite.All","DeviceManagementConfiguration.Read.All","DeviceManagementApps.Read.All","User.Read","Group.Read.All","BitlockerKey.Read.All"];
+function renderLogs(){
+  const filterEl=document.getElementById('logFilter'); const filter=filterEl?filterEl.value:'all';
+  const list=document.getElementById('logList'); if(!list) return;
+  const filtered = logs.filter(e=> filter==='all' || (filter==='error'&&e.level==='error') || (filter==='warn'&&(e.level==='warn'||e.level==='error')));
+  list.innerHTML = filtered.map(e=>`<div class="log-entry ${e.level}"><span class="t">${e.time}</span><span class="log-dot"></span><span class="m">${e.msg.replace(/</g,'&lt;')}</span></div>`).join('');
+  list.scrollTop = list.scrollHeight;
+}
+document.getElementById('clearLogs').addEventListener('click', ()=>{ logs=[]; logErrCount=0; document.getElementById('logErrCount').style.display='none'; renderLogs(); });
+document.getElementById('copyLogs').addEventListener('click', ()=>{ navigator.clipboard.writeText(logs.map(e=>`[${e.time}] ${e.level.toUpperCase()}: ${e.msg}`).join('\n')); toast('Logs copied to clipboard'); });
+document.getElementById('logFilter').addEventListener('change', renderLogs);
 
-function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
-  document.getElementById('toastWrap').appendChild(t); setTimeout(()=>t.remove(),6000); }
+function toast(msg, level='info'){
+  const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+  document.getElementById('toastWrap').appendChild(t); setTimeout(()=>t.remove(),6000);
+  log(level, msg);
+}
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -174,10 +259,18 @@ function showPage(id){
 }
 document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>{if(!b.disabled) showPage(b.dataset.page);}));
 
+// ===== Auth (interactive only, MSAL.js public client) =====
+let msalInstance=null, account=null;
+if(typeof msal === 'undefined'){
+  window.addEventListener('DOMContentLoaded', ()=>toast("MSAL library failed to load — check your internet connection and reload the page.","error"));
+}
+const DELEGATED_SCOPES=["Device.Read.All","DeviceManagementManagedDevices.ReadWrite.All","DeviceManagementServiceConfig.ReadWrite.All","DeviceManagementConfiguration.Read.All","DeviceManagementApps.Read.All","User.Read","Group.Read.All","BitlockerKey.Read.All"];
+
 document.getElementById('connectBtn').addEventListener('click', async ()=>{
   const clientId=document.getElementById('cfgClientId').value.trim();
   const tenantId=document.getElementById('cfgTenantId').value.trim() || 'organizations';
-  if(!clientId){ toast("Enter your Client ID on the Home page first"); return; }
+  if(!clientId){ toast("Enter your Client ID on the Home page first","warn"); return; }
+  log('info', `Connecting to Microsoft Graph (tenant: ${tenantId})...`);
   try{
     msalInstance = new msal.PublicClientApplication({
       auth:{ clientId, authority:`https://login.microsoftonline.com/${tenantId}`, redirectUri: window.location.href },
@@ -188,7 +281,7 @@ document.getElementById('connectBtn').addEventListener('click', async ()=>{
     account = resp.account;
     msalInstance.setActiveAccount(account);
     onConnected();
-  }catch(e){ toast("Connection failed: "+(e.message||e)); console.error(e); }
+  }catch(e){ toast("Connection failed: "+(e.message||e), "error"); console.error(e); }
 });
 document.getElementById('disconnectBtn').addEventListener('click', ()=>{
   if(msalInstance && account) msalInstance.logoutPopup({account});
@@ -197,6 +290,7 @@ document.getElementById('disconnectBtn').addEventListener('click', ()=>{
   document.getElementById('connectBtn').disabled=false;
   document.getElementById('disconnectBtn').disabled=true;
   ['navDash','navDevices','navPlaybooks'].forEach(id=>document.getElementById(id).disabled=true);
+  log('info','Disconnected.');
   showPage('home');
 });
 function onConnected(){
@@ -205,50 +299,66 @@ function onConnected(){
   document.getElementById('connectBtn').disabled=true;
   document.getElementById('disconnectBtn').disabled=false;
   ['navDash','navDevices','navPlaybooks'].forEach(id=>document.getElementById(id).disabled=false);
-  toast("Connected to Microsoft Graph");
+  toast("Connected to Microsoft Graph as "+account.username, "success");
   showPage('dashboard'); loadDashboard();
 }
 async function getToken(){
   const req={scopes: DELEGATED_SCOPES, account};
   try{ const r=await msalInstance.acquireTokenSilent(req); return r.accessToken; }
-  catch(e){ const r=await msalInstance.acquireTokenPopup(req); return r.accessToken; }
+  catch(e){ log('warn','Silent token acquisition failed, prompting popup...'); const r=await msalInstance.acquireTokenPopup(req); return r.accessToken; }
 }
+
+// ===== Graph helpers (all instrumented for the Logs page) =====
 async function graphGet(path){
   const token=await getToken();
+  log('info', `GET ${path}`);
   const res=await fetch(`https://graph.microsoft.com${path}`,{headers:{Authorization:`Bearer ${token}`}});
-  if(!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0,200)}`);
-  return res.json();
+  if(!res.ok){ const body=await res.text(); log('error', `HTTP ${res.status} on GET ${path} — ${body.slice(0,200)}`); throw new Error(`HTTP ${res.status}: ${body.slice(0,200)}`); }
+  const data = await res.json();
+  log('success', `200 OK — GET ${path}`);
+  return data;
 }
 async function graphAllPages(path){
   let results=[], url=`https://graph.microsoft.com${path}`;
   const token=await getToken();
+  log('info', `GET (paged) ${path}`);
+  let pageCount=0;
   while(url){
     const res=await fetch(url,{headers:{Authorization:`Bearer ${token}`}});
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    if(!res.ok){ const body=await res.text(); log('error', `HTTP ${res.status} on GET ${path} — ${body.slice(0,200)}`); throw new Error(`HTTP ${res.status}: ${body.slice(0,200)}`); }
     const data=await res.json();
+    pageCount++;
     if(data.value) results=results.concat(data.value);
     url=data['@odata.nextLink']||null;
   }
+  log('success', `200 OK — ${results.length} item(s) across ${pageCount} page(s) — ${path}`);
   return results;
 }
 async function graphBatch(requests){
-  // Matches Invoke-GraphBatchRequest: chunks of 20, beta/$batch
   const token=await getToken();
   let all=[];
+  log('info', `POST /$batch — ${requests.length} sub-request(s): ${requests.map(r=>r.id).join(', ')}`);
   for(let i=0;i<requests.length;i+=20){
     const chunk=requests.slice(i,i+20);
     const res=await fetch('https://graph.microsoft.com/beta/$batch',{
       method:'POST', headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
       body: JSON.stringify({requests: chunk})
     });
+    if(!res.ok){ const body=await res.text(); log('error', `HTTP ${res.status} on POST /$batch — ${body.slice(0,200)}`); throw new Error(`HTTP ${res.status}`); }
     const data=await res.json();
-    if(data.responses) all=all.concat(data.responses);
+    if(data.responses){
+      all=all.concat(data.responses);
+      data.responses.forEach(r=>{
+        if(r.status>=200 && r.status<300) log('success', `batch[${r.id}] → HTTP ${r.status}`);
+        else log('error', `batch[${r.id}] → HTTP ${r.status} — ${JSON.stringify(r.body&&r.body.error||r.body||'').slice(0,200)}`);
+      });
+    }
   }
   return all;
 }
 function odataEscape(v){ return v.replace(/'/g,"''"); }
 
-// ===== Dashboard: exact batch from Update-DashboardStatistics =====
+// ===== Dashboard: exact batch from Update-DashboardStatistics, plus OS breakdown =====
 async function loadDashboard(){
   try{
     const thirty=new Date(Date.now()-30*864e5).toISOString().replace(/\.\d+Z$/,'Z');
@@ -262,19 +372,35 @@ async function loadDashboard(){
       {id:"stale90", method:"GET", url:`/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=lastSyncDateTime lt ${ninety}`},
       {id:"stale180", method:"GET", url:`/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=lastSyncDateTime lt ${oneEighty}`},
       {id:"personal", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=managedDeviceOwnerType eq 'personal'"},
-      {id:"corporate", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=managedDeviceOwnerType eq 'company'"}
+      {id:"corporate", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=managedDeviceOwnerType eq 'company'"},
+      {id:"osWindows", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=startswith(operatingSystem,'Windows')"},
+      {id:"osmacOS", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=operatingSystem eq 'macOS'"},
+      {id:"osiOS", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=operatingSystem eq 'iOS'"},
+      {id:"osAndroid", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=operatingSystem eq 'Android'"},
+      {id:"osLinux", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=operatingSystem eq 'Linux'"}
     ];
     const responses = await graphBatch(requests);
     const getCount=(id)=>{ const r=responses.find(x=>x.id===id); if(!r||r.status!==200) return null;
       const b=r.body; if(typeof b==='number') return b; if(b && b['@odata.count']!=null) return b['@odata.count']; return null; };
-    document.getElementById('statIntune').textContent = getCount('intune') ?? '—';
+    const intune=getCount('intune'), win=getCount('osWindows'), mac=getCount('osmacOS'), ios=getCount('osiOS'), android=getCount('osAndroid'), linux=getCount('osLinux');
+    document.getElementById('statIntune').textContent = intune ?? '—';
     document.getElementById('statAutopilot').textContent = getCount('autopilot') ?? '—';
     document.getElementById('statEntra').textContent = getCount('entra') ?? '—';
     document.getElementById('stat30').textContent = getCount('stale30') ?? '—';
     document.getElementById('stat90').textContent = getCount('stale90') ?? '—';
     document.getElementById('stat180').textContent = getCount('stale180') ?? '—';
     document.getElementById('statOwnership').textContent = `${getCount('personal')??'—'} / ${getCount('corporate')??'—'}`;
-  }catch(e){ toast("Dashboard error: "+e.message); }
+    document.getElementById('osWin').textContent = win ?? '—';
+    document.getElementById('osMac').textContent = mac ?? '—';
+    document.getElementById('osIos').textContent = ios ?? '—';
+    document.getElementById('osAndroid').textContent = android ?? '—';
+    document.getElementById('osLinux').textContent = linux ?? '—';
+    if(intune!=null && [win,mac,ios,android,linux].every(v=>v!=null)){
+      document.getElementById('osOther').textContent = Math.max(0, intune-(win+mac+ios+android+linux));
+    }
+    document.getElementById('dashUpdated').textContent = 'Last refreshed: '+new Date().toLocaleTimeString();
+    log('success', 'Dashboard statistics refreshed.');
+  }catch(e){ toast("Dashboard error: "+e.message, "error"); }
 }
 document.getElementById('refreshDash').addEventListener('click', loadDashboard);
 
@@ -283,10 +409,11 @@ let searchResults=[];
 document.getElementById('searchBtn').addEventListener('click', async ()=>{
   const mode=document.getElementById('searchType').value;
   const raw=document.getElementById('searchInput').value.trim();
-  if(!raw){ toast("Enter a search term"); return; }
+  if(!raw){ toast("Enter a search term","warn"); return; }
   const terms=raw.split(',').map(s=>s.trim()).filter(Boolean);
   document.getElementById('searchBtn').disabled=true;
   searchResults=[];
+  log('info', `Search started — mode="${mode}", terms=[${terms.join(', ')}]`);
   try{
     for(const term of terms){
       const esc=odataEscape(term);
@@ -296,13 +423,13 @@ document.getElementById('searchBtn').addEventListener('click', async ()=>{
         for(const ad of entraDevices){
           const matchIntune = intuneDevices.find(d=>d.deviceName===ad.displayName);
           let matchAp=null;
-          if(matchIntune?.serialNumber){
+          if(matchIntune && matchIntune.serialNumber){
             const ap = await graphAllPages(`/beta/deviceManagement/windowsAutopilotDeviceIdentities?$filter=contains(serialNumber,'${odataEscape(matchIntune.serialNumber)}')`);
             matchAp = ap[0]||null;
           }
-          searchResults.push({DeviceName:ad.displayName, SerialNumber:matchIntune?.serialNumber||matchAp?.serialNumber,
-            OperatingSystem:ad.operatingSystem, PrimaryUser:matchIntune?.userDisplayName,
-            EntraDeviceId:ad.id, IntuneDeviceId:matchIntune?.id, AutopilotIdentityId:matchAp?.id});
+          searchResults.push({DeviceName:ad.displayName, SerialNumber:(matchIntune&&matchIntune.serialNumber)||(matchAp&&matchAp.serialNumber),
+            OperatingSystem:ad.operatingSystem, PrimaryUser:matchIntune&&matchIntune.userDisplayName,
+            EntraDeviceId:ad.id, IntuneDeviceId:matchIntune&&matchIntune.id, AutopilotIdentityId:matchAp&&matchAp.id});
         }
         for(const id of intuneDevices){
           if(searchResults.find(r=>r.DeviceName===id.deviceName)) continue;
@@ -315,14 +442,14 @@ document.getElementById('searchBtn').addEventListener('click', async ()=>{
         for(const id of intuneDevices){
           const entra = await graphAllPages(`/beta/devices?$filter=displayName eq '${odataEscape(id.deviceName)}'&$select=id,deviceId,operatingSystem`);
           const matchAp = apDevices.find(a=>a.serialNumber===id.serialNumber);
-          searchResults.push({DeviceName:id.deviceName, SerialNumber:id.serialNumber, OperatingSystem:entra[0]?.operatingSystem||id.operatingSystem,
-            PrimaryUser:id.userDisplayName, EntraDeviceId:entra[0]?.id, IntuneDeviceId:id.id, AutopilotIdentityId:matchAp?.id});
+          searchResults.push({DeviceName:id.deviceName, SerialNumber:id.serialNumber, OperatingSystem:(entra[0]&&entra[0].operatingSystem)||id.operatingSystem,
+            PrimaryUser:id.userDisplayName, EntraDeviceId:entra[0]&&entra[0].id, IntuneDeviceId:id.id, AutopilotIdentityId:matchAp&&matchAp.id});
         }
         for(const ap of apDevices){
           if(searchResults.find(r=>r.SerialNumber===ap.serialNumber)) continue;
           searchResults.push({DeviceName:ap.displayName, SerialNumber:ap.serialNumber, AutopilotIdentityId:ap.id});
         }
-      } else { // Device ID -> Entra object id direct lookup
+      } else {
         try{
           const ad = await graphGet(`/beta/devices/${term}`);
           let matchIntune=null;
@@ -330,14 +457,15 @@ document.getElementById('searchBtn').addEventListener('click', async ()=>{
             const im = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=azureADDeviceId eq '${ad.deviceId}'&$select=id,deviceName,serialNumber,operatingSystem,userDisplayName`);
             matchIntune = im[0]||null;
           }
-          searchResults.push({DeviceName:ad.displayName, SerialNumber:matchIntune?.serialNumber, OperatingSystem:ad.operatingSystem,
-            PrimaryUser:matchIntune?.userDisplayName, EntraDeviceId:ad.id, IntuneDeviceId:matchIntune?.id});
-        }catch(e){ toast(`Device ID '${term}' not found in Entra ID`); }
+          searchResults.push({DeviceName:ad.displayName, SerialNumber:matchIntune&&matchIntune.serialNumber, OperatingSystem:ad.operatingSystem,
+            PrimaryUser:matchIntune&&matchIntune.userDisplayName, EntraDeviceId:ad.id, IntuneDeviceId:matchIntune&&matchIntune.id});
+        }catch(e){ toast(`Device ID '${term}' not found in Entra ID`, "warn"); }
       }
     }
     renderResults();
-    if(!searchResults.length) toast("No devices found");
-  }catch(e){ toast("Search error: "+e.message); }
+    if(!searchResults.length) toast("No devices found","warn");
+    else log('success', `Search complete — ${searchResults.length} device(s) found.`);
+  }catch(e){ toast("Search error: "+e.message, "error"); }
   document.getElementById('searchBtn').disabled=false;
 });
 function renderResults(){
@@ -354,10 +482,10 @@ function renderResults(){
   });
 }
 
-// ===== Offboard: mirrors the $OffboardButton batch logic exactly =====
+// ===== Offboard: mirrors the $OffboardButton batch logic =====
 document.getElementById('offboardBtn').addEventListener('click', ()=>{
   const selected=Array.from(document.querySelectorAll('.sel:checked')).map(cb=>searchResults[+cb.dataset.i]);
-  if(!selected.length){ toast("Select at least one device"); return; }
+  if(!selected.length){ toast("Select at least one device","warn"); return; }
   window._sel=selected;
   document.getElementById('svcList').innerHTML=`
     <div class="svc-row"><input type="checkbox" id="svcEntra" checked> <label for="svcEntra">Delete from Entra ID</label>
@@ -379,6 +507,7 @@ document.getElementById('confirmOffboardBtn').addEventListener('click', async ()
   const devices=window._sel;
   const useBulkAutopilot = doAutopilot && devices.filter(d=>d.SerialNumber).length>=2;
   const bulkSerials=[];
+  log('info', `Offboard confirmed for ${devices.length} device(s): ${devices.map(d=>d.DeviceName).join(', ')}`);
 
   for(const d of devices){
     const batchRequests=[];
@@ -395,19 +524,23 @@ document.getElementById('confirmOffboardBtn').addEventListener('click', async ()
       try{
         const responses = await graphBatch(batchRequests);
         const summary = responses.map(r=>`${r.id}=${[200,204].includes(r.status)?'OK':'HTTP '+r.status}`).join(' ');
-        toast(`${d.DeviceName}: ${summary}`);
-      }catch(e){ toast(`${d.DeviceName}: error - ${e.message}`); }
+        toast(`${d.DeviceName}: ${summary}`, responses.every(r=>[200,204].includes(r.status))?'success':'error');
+      }catch(e){ toast(`${d.DeviceName}: error - ${e.message}`, "error"); }
+    } else {
+      log('warn', `${d.DeviceName}: no matching service IDs to offboard — nothing sent.`);
     }
   }
   if(useBulkAutopilot && bulkSerials.length>=2){
     try{
       const token=await getToken();
+      log('info', `POST /deviceManagement/windowsAutopilotDeviceIdentities/deleteDevices — ${bulkSerials.length} serial(s)`);
       const res=await fetch('https://graph.microsoft.com/beta/deviceManagement/windowsAutopilotDeviceIdentities/deleteDevices',{
         method:'POST', headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
         body: JSON.stringify({serialNumbers: bulkSerials})
       });
-      toast(res.ok ? `Bulk Autopilot deletion: ${bulkSerials.length} devices` : `Bulk Autopilot deletion failed: HTTP ${res.status}`);
-    }catch(e){ toast("Bulk Autopilot deletion error: "+e.message); }
+      if(res.ok) toast(`Bulk Autopilot deletion: ${bulkSerials.length} devices`, "success");
+      else { const body=await res.text(); toast(`Bulk Autopilot deletion failed: HTTP ${res.status}`, "error"); log('error', body.slice(0,300)); }
+    }catch(e){ toast("Bulk Autopilot deletion error: "+e.message, "error"); }
   }
   document.getElementById('searchBtn').click();
 });
@@ -415,9 +548,10 @@ document.getElementById('confirmOffboardBtn').addEventListener('click', async ()
 // ===== Playbooks: exact queries from the original Playbook_*.ps1 files =====
 document.querySelectorAll('.playbook-btn').forEach(btn=>btn.addEventListener('click', async ()=>{
   const out=document.getElementById('pbResults'); out.innerHTML='<p class="hint">Running...</p>';
+  const pb=btn.dataset.pb;
+  log('info', `Playbook started: ${pb}`);
   try{
     let rows=[], headers=[];
-    const pb=btn.dataset.pb;
     if(pb==='autopilotNotIntune'){
       const ap = await graphAllPages('/beta/deviceManagement/windowsAutopilotDeviceIdentities');
       const intune = await graphAllPages('/beta/deviceManagement/managedDevices?$select=serialNumber');
@@ -437,19 +571,24 @@ document.querySelectorAll('.playbook-btn').forEach(btn=>btn.addEventListener('cl
       headers=['Device Name','Serial','OS','Model'];
     } else if(pb==='stale'){
       const staleDate=new Date(Date.now()-30*864e5).toISOString().replace(/\.\d+Z$/,'Z');
+      log('info', `Stale threshold: lastSyncDateTime lt ${staleDate}`);
       const all = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=lastSyncDateTime lt ${staleDate}&$select=deviceName,serialNumber,operatingSystem,model,lastSyncDateTime`);
       rows = all.map(d=>[d.deviceName, d.serialNumber, d.operatingSystem, d.lastSyncDateTime]);
       headers=['Device Name','Serial','OS','Last Sync'];
     } else if(pb==='osWindows'){
-      const all = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=operatingSystem eq 'Windows'&$select=deviceName,serialNumber,operatingSystem,model,osVersion,userDisplayName`);
+      const all = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=startswith(operatingSystem,'Windows')&$select=deviceName,serialNumber,operatingSystem,model,osVersion,userDisplayName`);
       rows = all.map(d=>[d.deviceName, d.serialNumber, d.osVersion, d.userDisplayName]);
       headers=['Device Name','Serial','OS Version','User'];
     }
+    const zeroNote = rows.length===0 ? " Zero rows means Graph returned an empty (but successful) result — check the Logs page to see the exact filter and confirm this matches your tenant's data." : "";
     out.innerHTML = `<div class="tbl-wrap panel" style="padding:0"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
       <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c??''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
-      <p class="hint">${rows.length} result(s)</p>`;
-  }catch(e){ out.innerHTML=`<p class="hint">Error: ${e.message}</p>`; }
+      <p class="hint">${rows.length} result(s).${zeroNote}</p>`;
+    log(rows.length?'success':'warn', `Playbook ${pb} finished — ${rows.length} row(s).`);
+  }catch(e){ out.innerHTML=`<p class="hint" style="color:var(--danger)">Error: ${e.message}</p>`; toast(`Playbook ${pb} failed: ${e.message}`, "error"); }
 }));
+
+renderLogs();
 </script>
 </body>
 </html>
