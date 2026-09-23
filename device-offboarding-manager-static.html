@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Device Offboarding Manager</title>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<style>
+:root{
+  --bg:#f0f0f0; --panel:#fff; --text:#1a202c; --muted:#718096; --accent:#0078d4;
+  --accent-hover:#106ebe; --danger:#dc2626; --border:#e0e0e0; --card-dark:#1b2a47;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#17181a; --panel:#232427; --text:#eef0f2; --muted:#9aa3ad; --border:#33353a; } }
+:root[data-theme="dark"]{ --bg:#17181a; --panel:#232427; --text:#eef0f2; --muted:#9aa3ad; --border:#33353a; }
+*{box-sizing:border-box;} html,body{height:100%;margin:0;}
+body{font-family:-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--text);
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);}
+button{cursor:pointer; font-family:inherit;} input,select{font-family:inherit;}
+.app{display:flex; height:100vh; height:100%;}
+.sidebar{width:210px; background:#2d2d2d; color:#fff; flex-shrink:0; display:flex; flex-direction:column; overflow-y:auto;}
+.sidebar h1{font-size:15px; padding:16px 14px 8px; margin:0;}
+.nav-btn{background:transparent; border:none; color:#b0b0b0; text-align:left; padding:11px 16px; font-size:14px; border-left:3px solid transparent;}
+.nav-btn:hover{background:#3a3a3a; color:#fff;}
+.nav-btn.active{background:#3a3a3a; color:#fff; border-left-color:var(--accent);}
+.nav-btn:disabled{opacity:.4;}
+.sb-section{padding:10px 14px;}
+.sb-btn{width:100%; background:#404040; color:#fff; border:none; border-radius:5px; padding:9px; font-size:12.5px; margin-bottom:8px;}
+.sb-btn.primary{background:var(--accent);} .sb-btn:disabled{opacity:.4;}
+.tenant-box{background:#3a3a3a; border-radius:5px; padding:10px 12px; font-size:11px; color:#aaa; margin-bottom:8px; word-break:break-all;}
+.main{flex:1; overflow-y:auto; padding:26px;}
+.page{display:none;} .page.active{display:block;}
+h2{margin:0 0 6px; font-size:26px;} .sub{color:var(--muted); margin:0 0 18px; font-size:14px;}
+.panel{background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:18px;}
+.grid3{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:14px;}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;}
+@media (max-width:900px){.grid2,.grid3{grid-template-columns:1fr 1fr;}}
+.card{background:var(--card-dark); color:#fff; border-radius:8px; padding:16px;}
+.card .label{color:#a0aec0; font-size:12.5px; margin-bottom:6px;} .card .num{font-size:28px; font-weight:700;}
+.row{display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;}
+input[type=text]{flex:1; min-width:180px; padding:8px 10px; border:1px solid var(--border); border-radius:5px; background:var(--panel); color:var(--text);}
+select{padding:8px 10px; border:1px solid var(--border); border-radius:5px; background:var(--panel); color:var(--text);}
+.btn{background:var(--accent); color:#fff; border:none; border-radius:5px; padding:9px 16px; font-size:13.5px;}
+.btn.danger{background:var(--danger);} .btn.secondary{background:#eee; color:#333;} .btn:disabled{opacity:.5;}
+table{width:100%; border-collapse:collapse; font-size:13px;}
+th{text-align:left; background:rgba(128,128,128,.08); padding:8px; border-bottom:1px solid var(--border);}
+td{padding:8px; border-bottom:1px solid var(--border);}
+.tbl-wrap{overflow-x:auto; max-height:50vh; overflow-y:auto;}
+.pill{display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600;}
+.pill.ok{background:#c6f6d5; color:#22543d;} .pill.no{background:#fed7d7; color:#822727;}
+.modal-bg{display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); align-items:center; justify-content:center; z-index:50; padding:16px;}
+.modal-bg.show{display:flex;}
+.modal{background:var(--panel); border-radius:8px; padding:24px; max-width:600px; width:100%; max-height:85vh; overflow-y:auto;}
+.svc-row{display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); font-size:13.5px;}
+.toast-wrap{position:fixed; bottom:16px; right:16px; z-index:100; display:flex; flex-direction:column; gap:8px;}
+.toast{background:#1b2a47; color:#fff; padding:12px 16px; border-radius:8px; font-size:13px; max-width:340px;}
+.playbook-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px;}
+.playbook-btn{background:var(--card-dark); color:#fff; border:none; border-radius:8px; padding:18px; text-align:left;}
+.pb-desc{font-size:12px; opacity:.7; margin-top:8px;}
+.hint{font-size:12px; color:var(--muted);}
+.warn-banner{background:var(--danger); color:#fff; border-radius:8px; padding:16px; margin-bottom:20px; font-size:13.5px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <h1>⚙️ Device Offboarding</h1>
+    <div class="sb-section">
+      <div id="tenantBox" class="tenant-box" style="display:none"></div>
+      <button id="connectBtn" class="sb-btn primary">Connect to MS Graph</button>
+      <button id="disconnectBtn" class="sb-btn" disabled>Disconnect</button>
+    </div>
+    <div style="flex:1"></div>
+    <div class="sb-section">
+      <button class="nav-btn active" data-page="home">Home</button>
+      <button class="nav-btn" data-page="dashboard" disabled id="navDash">Dashboard</button>
+      <button class="nav-btn" data-page="devices" disabled id="navDevices">Device Offboarding</button>
+      <button class="nav-btn" data-page="playbooks" disabled id="navPlaybooks">Playbooks</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="page active" id="page-home">
+      <h2>Device Offboarding Manager</h2>
+      <p class="sub">Static web edition — matches the original PowerShell tool's Graph queries exactly</p>
+      <div class="warn-banner"><b>⚠ Caution:</b> Deletion operations are permanent. Test in a non-production tenant first.</div>
+      <div class="panel">
+        <p>Requires an Entra ID App Registration, platform type <b>SPA</b>, redirect URI = this page's URL. Delegated permissions: <code>Device.Read.All, DeviceManagementManagedDevices.ReadWrite.All, DeviceManagementServiceConfig.ReadWrite.All, DeviceManagementConfiguration.Read.All, DeviceManagementApps.Read.All, User.Read, Group.Read.All, BitlockerKey.Read.All</code></p>
+        <div class="field" style="margin-top:14px"><label class="hint">Client ID</label><br><input type="text" id="cfgClientId" placeholder="app registration client id" style="width:100%; margin-top:4px;"></div>
+        <div class="field" style="margin-top:10px"><label class="hint">Tenant ID (or 'organizations')</label><br><input type="text" id="cfgTenantId" placeholder="tenant id" style="width:100%; margin-top:4px;"></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-dashboard">
+      <h2>Dashboard</h2>
+      <p class="sub">Single $batch call, matching Update-DashboardStatistics <button class="btn secondary" id="refreshDash" style="float:right">Refresh</button></p>
+      <div class="grid3">
+        <div class="card"><div class="label">Intune Devices</div><div class="num" id="statIntune">—</div></div>
+        <div class="card"><div class="label">Autopilot Devices</div><div class="num" id="statAutopilot">—</div></div>
+        <div class="card"><div class="label">Entra ID Devices</div><div class="num" id="statEntra">—</div></div>
+        <div class="card"><div class="label">Personal / Corporate</div><div class="num" id="statOwnership" style="font-size:18px">—</div></div>
+      </div>
+      <div class="grid3">
+        <div class="card"><div class="label">Stale &gt; 30 days</div><div class="num" id="stat30">—</div></div>
+        <div class="card"><div class="label">Stale &gt; 90 days</div><div class="num" id="stat90">—</div></div>
+        <div class="card"><div class="label">Stale &gt; 180 days</div><div class="num" id="stat180">—</div></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-devices">
+      <h2>Device Offboarding</h2>
+      <p class="sub">Search matches Invoke-DeviceSearch's 3 modes exactly</p>
+      <div class="row">
+        <select id="searchType"><option value="Device Name">Device Name</option><option value="Serial Number">Serial Number</option><option value="Device ID">Device ID (Entra object id)</option></select>
+        <input type="text" id="searchInput" placeholder="Enter search text (comma-separated for multiple)">
+        <button class="btn" id="searchBtn">Search</button>
+      </div>
+      <div class="tbl-wrap panel" style="padding:0">
+        <table>
+          <thead><tr><th></th><th>Device Name</th><th>Serial</th><th>OS</th><th>Primary User</th><th>Entra</th><th>Intune</th><th>Autopilot</th></tr></thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+      <p id="resultsEmpty" class="hint" style="margin-top:10px">No results yet. Search for a device above.</p>
+      <div style="margin-top:16px"><button class="btn danger" id="offboardBtn">Offboard device(s)</button></div>
+    </div>
+
+    <div class="page" id="page-playbooks">
+      <h2>Playbooks</h2>
+      <p class="sub">Matching the original's Graph queries exactly. Note: 5 playbooks from the original (Outdated OS, EOL devices, BitLocker/FileVault key reports, corporate-identifier stale) aren't included here — they need reference data (EOL date tables, key-vault access) beyond a straight query port.</p>
+      <div class="playbook-grid">
+        <button class="playbook-btn" data-pb="autopilotNotIntune">Autopilot Not in Intune<div class="pb-desc">Get-AutopilotNotIntuneDevices</div></button>
+        <button class="playbook-btn" data-pb="intuneNotAutopilot">Intune Not in Autopilot<div class="pb-desc">Get-IntuneNotAutopilotDevices</div></button>
+        <button class="playbook-btn" data-pb="corporate">Corporate Devices<div class="pb-desc">Get-CorporateDevices</div></button>
+        <button class="playbook-btn" data-pb="personal">Personal Devices<div class="pb-desc">Get-PersonalDevices</div></button>
+        <button class="playbook-btn" data-pb="stale">Stale Devices (30d)<div class="pb-desc">Get-StaleDevices</div></button>
+        <button class="playbook-btn" data-pb="osWindows">Windows Devices<div class="pb-desc">Get-OSSpecificDevices</div></button>
+      </div>
+      <div id="pbResults" style="margin-top:20px"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="confirmModal">
+  <div class="modal">
+    <h3>Confirm Device Offboarding</h3>
+    <p class="hint" style="color:var(--danger)">This action cannot be undone. Matches the original's confirmation dialog.</p>
+    <div id="svcList"></div>
+    <p style="font-size:13px; font-weight:600; margin-top:16px; margin-bottom:6px; color:var(--danger)">Type OFFBOARD to confirm:</p>
+    <input type="text" id="confirmText" style="width:100%; margin-bottom:16px;">
+    <div style="display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn secondary" id="cancelOffboard">Cancel</button>
+      <button class="btn danger" id="confirmOffboardBtn" disabled>Confirm Offboarding</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// ===== Config / Auth (interactive only, MSAL.js public client) =====
+let msalInstance=null, account=null;
+if(typeof msal === 'undefined'){
+  window.addEventListener('DOMContentLoaded', ()=>toast("MSAL library failed to load — check your internet connection and reload the page."));
+}
+const DELEGATED_SCOPES=["Device.Read.All","DeviceManagementManagedDevices.ReadWrite.All","DeviceManagementServiceConfig.ReadWrite.All","DeviceManagementConfiguration.Read.All","DeviceManagementApps.Read.All","User.Read","Group.Read.All","BitlockerKey.Read.All"];
+
+function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+  document.getElementById('toastWrap').appendChild(t); setTimeout(()=>t.remove(),6000); }
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  const b=document.querySelector(`.nav-btn[data-page="${id}"]`); if(b) b.classList.add('active');
+}
+document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>{if(!b.disabled) showPage(b.dataset.page);}));
+
+document.getElementById('connectBtn').addEventListener('click', async ()=>{
+  const clientId=document.getElementById('cfgClientId').value.trim();
+  const tenantId=document.getElementById('cfgTenantId').value.trim() || 'organizations';
+  if(!clientId){ toast("Enter your Client ID on the Home page first"); return; }
+  try{
+    msalInstance = new msal.PublicClientApplication({
+      auth:{ clientId, authority:`https://login.microsoftonline.com/${tenantId}`, redirectUri: window.location.href },
+      cache:{ cacheLocation:"sessionStorage" }
+    });
+    await msalInstance.initialize();
+    const resp = await msalInstance.loginPopup({ scopes: DELEGATED_SCOPES });
+    account = resp.account;
+    msalInstance.setActiveAccount(account);
+    onConnected();
+  }catch(e){ toast("Connection failed: "+(e.message||e)); console.error(e); }
+});
+document.getElementById('disconnectBtn').addEventListener('click', ()=>{
+  if(msalInstance && account) msalInstance.logoutPopup({account});
+  account=null;
+  document.getElementById('tenantBox').style.display='none';
+  document.getElementById('connectBtn').disabled=false;
+  document.getElementById('disconnectBtn').disabled=true;
+  ['navDash','navDevices','navPlaybooks'].forEach(id=>document.getElementById(id).disabled=true);
+  showPage('home');
+});
+function onConnected(){
+  document.getElementById('tenantBox').style.display='block';
+  document.getElementById('tenantBox').textContent = account.username;
+  document.getElementById('connectBtn').disabled=true;
+  document.getElementById('disconnectBtn').disabled=false;
+  ['navDash','navDevices','navPlaybooks'].forEach(id=>document.getElementById(id).disabled=false);
+  toast("Connected to Microsoft Graph");
+  showPage('dashboard'); loadDashboard();
+}
+async function getToken(){
+  const req={scopes: DELEGATED_SCOPES, account};
+  try{ const r=await msalInstance.acquireTokenSilent(req); return r.accessToken; }
+  catch(e){ const r=await msalInstance.acquireTokenPopup(req); return r.accessToken; }
+}
+async function graphGet(path){
+  const token=await getToken();
+  const res=await fetch(`https://graph.microsoft.com${path}`,{headers:{Authorization:`Bearer ${token}`}});
+  if(!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0,200)}`);
+  return res.json();
+}
+async function graphAllPages(path){
+  let results=[], url=`https://graph.microsoft.com${path}`;
+  const token=await getToken();
+  while(url){
+    const res=await fetch(url,{headers:{Authorization:`Bearer ${token}`}});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data=await res.json();
+    if(data.value) results=results.concat(data.value);
+    url=data['@odata.nextLink']||null;
+  }
+  return results;
+}
+async function graphBatch(requests){
+  // Matches Invoke-GraphBatchRequest: chunks of 20, beta/$batch
+  const token=await getToken();
+  let all=[];
+  for(let i=0;i<requests.length;i+=20){
+    const chunk=requests.slice(i,i+20);
+    const res=await fetch('https://graph.microsoft.com/beta/$batch',{
+      method:'POST', headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
+      body: JSON.stringify({requests: chunk})
+    });
+    const data=await res.json();
+    if(data.responses) all=all.concat(data.responses);
+  }
+  return all;
+}
+function odataEscape(v){ return v.replace(/'/g,"''"); }
+
+// ===== Dashboard: exact batch from Update-DashboardStatistics =====
+async function loadDashboard(){
+  try{
+    const thirty=new Date(Date.now()-30*864e5).toISOString().replace(/\.\d+Z$/,'Z');
+    const ninety=new Date(Date.now()-90*864e5).toISOString().replace(/\.\d+Z$/,'Z');
+    const oneEighty=new Date(Date.now()-180*864e5).toISOString().replace(/\.\d+Z$/,'Z');
+    const requests=[
+      {id:"intune", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id"},
+      {id:"autopilot", method:"GET", url:"/deviceManagement/windowsAutopilotDeviceIdentities?$count=true&$top=1"},
+      {id:"entra", method:"GET", url:"/devices?$count=true&$top=1&$select=id", headers:{"ConsistencyLevel":"eventual"}},
+      {id:"stale30", method:"GET", url:`/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=lastSyncDateTime lt ${thirty}`},
+      {id:"stale90", method:"GET", url:`/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=lastSyncDateTime lt ${ninety}`},
+      {id:"stale180", method:"GET", url:`/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=lastSyncDateTime lt ${oneEighty}`},
+      {id:"personal", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=managedDeviceOwnerType eq 'personal'"},
+      {id:"corporate", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=managedDeviceOwnerType eq 'company'"}
+    ];
+    const responses = await graphBatch(requests);
+    const getCount=(id)=>{ const r=responses.find(x=>x.id===id); if(!r||r.status!==200) return null;
+      const b=r.body; if(typeof b==='number') return b; if(b && b['@odata.count']!=null) return b['@odata.count']; return null; };
+    document.getElementById('statIntune').textContent = getCount('intune') ?? '—';
+    document.getElementById('statAutopilot').textContent = getCount('autopilot') ?? '—';
+    document.getElementById('statEntra').textContent = getCount('entra') ?? '—';
+    document.getElementById('stat30').textContent = getCount('stale30') ?? '—';
+    document.getElementById('stat90').textContent = getCount('stale90') ?? '—';
+    document.getElementById('stat180').textContent = getCount('stale180') ?? '—';
+    document.getElementById('statOwnership').textContent = `${getCount('personal')??'—'} / ${getCount('corporate')??'—'}`;
+  }catch(e){ toast("Dashboard error: "+e.message); }
+}
+document.getElementById('refreshDash').addEventListener('click', loadDashboard);
+
+// ===== Search: mirrors Invoke-DeviceSearch's 3 modes =====
+let searchResults=[];
+document.getElementById('searchBtn').addEventListener('click', async ()=>{
+  const mode=document.getElementById('searchType').value;
+  const raw=document.getElementById('searchInput').value.trim();
+  if(!raw){ toast("Enter a search term"); return; }
+  const terms=raw.split(',').map(s=>s.trim()).filter(Boolean);
+  document.getElementById('searchBtn').disabled=true;
+  searchResults=[];
+  try{
+    for(const term of terms){
+      const esc=odataEscape(term);
+      if(mode==='Device Name'){
+        const entraDevices = await graphAllPages(`/beta/devices?$filter=displayName eq '${esc}'&$select=id,deviceId,displayName,operatingSystem,approximateLastSignInDateTime,accountEnabled,physicalIds`);
+        const intuneDevices = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=deviceName eq '${esc}'&$select=id,deviceName,serialNumber,operatingSystem,userDisplayName,lastSyncDateTime`);
+        for(const ad of entraDevices){
+          const matchIntune = intuneDevices.find(d=>d.deviceName===ad.displayName);
+          let matchAp=null;
+          if(matchIntune?.serialNumber){
+            const ap = await graphAllPages(`/beta/deviceManagement/windowsAutopilotDeviceIdentities?$filter=contains(serialNumber,'${odataEscape(matchIntune.serialNumber)}')`);
+            matchAp = ap[0]||null;
+          }
+          searchResults.push({DeviceName:ad.displayName, SerialNumber:matchIntune?.serialNumber||matchAp?.serialNumber,
+            OperatingSystem:ad.operatingSystem, PrimaryUser:matchIntune?.userDisplayName,
+            EntraDeviceId:ad.id, IntuneDeviceId:matchIntune?.id, AutopilotIdentityId:matchAp?.id});
+        }
+        for(const id of intuneDevices){
+          if(searchResults.find(r=>r.DeviceName===id.deviceName)) continue;
+          searchResults.push({DeviceName:id.deviceName, SerialNumber:id.serialNumber, OperatingSystem:id.operatingSystem,
+            PrimaryUser:id.userDisplayName, IntuneDeviceId:id.id});
+        }
+      } else if(mode==='Serial Number'){
+        const intuneDevices = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=serialNumber eq '${esc}'&$select=id,deviceName,serialNumber,operatingSystem,userDisplayName,lastSyncDateTime`);
+        const apDevices = await graphAllPages(`/beta/deviceManagement/windowsAutopilotDeviceIdentities?$filter=contains(serialNumber,'${esc}')`);
+        for(const id of intuneDevices){
+          const entra = await graphAllPages(`/beta/devices?$filter=displayName eq '${odataEscape(id.deviceName)}'&$select=id,deviceId,operatingSystem`);
+          const matchAp = apDevices.find(a=>a.serialNumber===id.serialNumber);
+          searchResults.push({DeviceName:id.deviceName, SerialNumber:id.serialNumber, OperatingSystem:entra[0]?.operatingSystem||id.operatingSystem,
+            PrimaryUser:id.userDisplayName, EntraDeviceId:entra[0]?.id, IntuneDeviceId:id.id, AutopilotIdentityId:matchAp?.id});
+        }
+        for(const ap of apDevices){
+          if(searchResults.find(r=>r.SerialNumber===ap.serialNumber)) continue;
+          searchResults.push({DeviceName:ap.displayName, SerialNumber:ap.serialNumber, AutopilotIdentityId:ap.id});
+        }
+      } else { // Device ID -> Entra object id direct lookup
+        try{
+          const ad = await graphGet(`/beta/devices/${term}`);
+          let matchIntune=null;
+          if(ad.deviceId){
+            const im = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=azureADDeviceId eq '${ad.deviceId}'&$select=id,deviceName,serialNumber,operatingSystem,userDisplayName`);
+            matchIntune = im[0]||null;
+          }
+          searchResults.push({DeviceName:ad.displayName, SerialNumber:matchIntune?.serialNumber, OperatingSystem:ad.operatingSystem,
+            PrimaryUser:matchIntune?.userDisplayName, EntraDeviceId:ad.id, IntuneDeviceId:matchIntune?.id});
+        }catch(e){ toast(`Device ID '${term}' not found in Entra ID`); }
+      }
+    }
+    renderResults();
+    if(!searchResults.length) toast("No devices found");
+  }catch(e){ toast("Search error: "+e.message); }
+  document.getElementById('searchBtn').disabled=false;
+});
+function renderResults(){
+  const body=document.getElementById('resultsBody'); body.innerHTML='';
+  document.getElementById('resultsEmpty').style.display = searchResults.length? 'none':'block';
+  searchResults.forEach((d,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><input type="checkbox" class="sel" data-i="${i}"></td>
+      <td>${d.DeviceName||''}</td><td>${d.SerialNumber||''}</td><td>${d.OperatingSystem||''}</td><td>${d.PrimaryUser||''}</td>
+      <td><span class="pill ${d.EntraDeviceId?'ok':'no'}">${d.EntraDeviceId?'Found':'—'}</span></td>
+      <td><span class="pill ${d.IntuneDeviceId?'ok':'no'}">${d.IntuneDeviceId?'Found':'—'}</span></td>
+      <td><span class="pill ${d.AutopilotIdentityId?'ok':'no'}">${d.AutopilotIdentityId?'Found':'—'}</span></td>`;
+    body.appendChild(tr);
+  });
+}
+
+// ===== Offboard: mirrors the $OffboardButton batch logic exactly =====
+document.getElementById('offboardBtn').addEventListener('click', ()=>{
+  const selected=Array.from(document.querySelectorAll('.sel:checked')).map(cb=>searchResults[+cb.dataset.i]);
+  if(!selected.length){ toast("Select at least one device"); return; }
+  window._sel=selected;
+  document.getElementById('svcList').innerHTML=`
+    <div class="svc-row"><input type="checkbox" id="svcEntra" checked> <label for="svcEntra">Delete from Entra ID</label>
+      <select id="entraMode" style="margin-left:auto"><option value="delete">Delete</option><option value="disable">Disable only</option></select></div>
+    <div class="svc-row"><input type="checkbox" id="svcIntune" checked> <label for="svcIntune">Delete from Intune</label></div>
+    <div class="svc-row"><input type="checkbox" id="svcAutopilot" checked> <label for="svcAutopilot">Delete from Autopilot</label></div>
+    <p class="hint" style="margin-top:12px">${selected.length} device(s): ${selected.map(d=>d.DeviceName).join(', ')}</p>`;
+  document.getElementById('confirmText').value='';
+  document.getElementById('confirmOffboardBtn').disabled=true;
+  document.getElementById('confirmModal').classList.add('show');
+});
+document.getElementById('cancelOffboard').addEventListener('click', ()=>document.getElementById('confirmModal').classList.remove('show'));
+document.getElementById('confirmText').addEventListener('input', e=>{ document.getElementById('confirmOffboardBtn').disabled = e.target.value!=='OFFBOARD'; });
+
+document.getElementById('confirmOffboardBtn').addEventListener('click', async ()=>{
+  document.getElementById('confirmModal').classList.remove('show');
+  const doEntra=document.getElementById('svcEntra').checked, entraMode=document.getElementById('entraMode').value;
+  const doIntune=document.getElementById('svcIntune').checked, doAutopilot=document.getElementById('svcAutopilot').checked;
+  const devices=window._sel;
+  const useBulkAutopilot = doAutopilot && devices.filter(d=>d.SerialNumber).length>=2;
+  const bulkSerials=[];
+
+  for(const d of devices){
+    const batchRequests=[];
+    if(doEntra && d.EntraDeviceId){
+      if(entraMode==='disable') batchRequests.push({id:"entra", method:"PATCH", url:`/devices/${d.EntraDeviceId}`, body:{accountEnabled:false}, headers:{"Content-Type":"application/json"}});
+      else batchRequests.push({id:"entra", method:"DELETE", url:`/devices/${d.EntraDeviceId}`});
+    }
+    if(doIntune && d.IntuneDeviceId) batchRequests.push({id:"intune", method:"DELETE", url:`/deviceManagement/managedDevices/${d.IntuneDeviceId}`});
+    if(doAutopilot && d.AutopilotIdentityId){
+      if(useBulkAutopilot) bulkSerials.push(d.SerialNumber);
+      else batchRequests.push({id:"autopilot", method:"DELETE", url:`/deviceManagement/windowsAutopilotDeviceIdentities/${d.AutopilotIdentityId}`});
+    }
+    if(batchRequests.length){
+      try{
+        const responses = await graphBatch(batchRequests);
+        const summary = responses.map(r=>`${r.id}=${[200,204].includes(r.status)?'OK':'HTTP '+r.status}`).join(' ');
+        toast(`${d.DeviceName}: ${summary}`);
+      }catch(e){ toast(`${d.DeviceName}: error - ${e.message}`); }
+    }
+  }
+  if(useBulkAutopilot && bulkSerials.length>=2){
+    try{
+      const token=await getToken();
+      const res=await fetch('https://graph.microsoft.com/beta/deviceManagement/windowsAutopilotDeviceIdentities/deleteDevices',{
+        method:'POST', headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
+        body: JSON.stringify({serialNumbers: bulkSerials})
+      });
+      toast(res.ok ? `Bulk Autopilot deletion: ${bulkSerials.length} devices` : `Bulk Autopilot deletion failed: HTTP ${res.status}`);
+    }catch(e){ toast("Bulk Autopilot deletion error: "+e.message); }
+  }
+  document.getElementById('searchBtn').click();
+});
+
+// ===== Playbooks: exact queries from the original Playbook_*.ps1 files =====
+document.querySelectorAll('.playbook-btn').forEach(btn=>btn.addEventListener('click', async ()=>{
+  const out=document.getElementById('pbResults'); out.innerHTML='<p class="hint">Running...</p>';
+  try{
+    let rows=[], headers=[];
+    const pb=btn.dataset.pb;
+    if(pb==='autopilotNotIntune'){
+      const ap = await graphAllPages('/beta/deviceManagement/windowsAutopilotDeviceIdentities');
+      const intune = await graphAllPages('/beta/deviceManagement/managedDevices?$select=serialNumber');
+      const set=new Set(intune.map(d=>d.serialNumber));
+      rows = ap.filter(d=>!set.has(d.serialNumber)).map(d=>[d.displayName, d.serialNumber, `${d.model} (${d.manufacturer})`]);
+      headers=['Device Name','Serial','Model'];
+    } else if(pb==='intuneNotAutopilot'){
+      const ap = await graphAllPages('/beta/deviceManagement/windowsAutopilotDeviceIdentities');
+      const intune = await graphAllPages('/beta/deviceManagement/managedDevices?$select=id,deviceName,serialNumber,operatingSystem,model,userDisplayName,lastSyncDateTime');
+      const set=new Set(ap.map(d=>d.serialNumber));
+      rows = intune.filter(d=>d.serialNumber && !set.has(d.serialNumber)).map(d=>[d.deviceName, d.serialNumber, d.operatingSystem, d.userDisplayName]);
+      headers=['Device Name','Serial','OS','User'];
+    } else if(pb==='corporate' || pb==='personal'){
+      const owner = pb==='corporate'?'company':'personal';
+      const all = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=managedDeviceOwnerType eq '${owner}'&$select=deviceName,serialNumber,operatingSystem,model,managedDeviceOwnerType,lastSyncDateTime`);
+      rows = all.map(d=>[d.deviceName, d.serialNumber, d.operatingSystem, d.model]);
+      headers=['Device Name','Serial','OS','Model'];
+    } else if(pb==='stale'){
+      const staleDate=new Date(Date.now()-30*864e5).toISOString().replace(/\.\d+Z$/,'Z');
+      const all = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=lastSyncDateTime lt ${staleDate}&$select=deviceName,serialNumber,operatingSystem,model,lastSyncDateTime`);
+      rows = all.map(d=>[d.deviceName, d.serialNumber, d.operatingSystem, d.lastSyncDateTime]);
+      headers=['Device Name','Serial','OS','Last Sync'];
+    } else if(pb==='osWindows'){
+      const all = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=operatingSystem eq 'Windows'&$select=deviceName,serialNumber,operatingSystem,model,osVersion,userDisplayName`);
+      rows = all.map(d=>[d.deviceName, d.serialNumber, d.osVersion, d.userDisplayName]);
+      headers=['Device Name','Serial','OS Version','User'];
+    }
+    out.innerHTML = `<div class="tbl-wrap panel" style="padding:0"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c??''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+      <p class="hint">${rows.length} result(s)</p>`;
+  }catch(e){ out.innerHTML=`<p class="hint">Error: ${e.message}</p>`; }
+}));
+</script>
+</body>
+</html>
