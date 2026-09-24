@@ -103,7 +103,7 @@ td{padding:8px; border-bottom:1px solid var(--border);}
       <p class="sub">Static web edition — matches the original PowerShell tool's Graph queries</p>
       <div class="warn-banner"><b>⚠ Caution:</b> Deletion operations are permanent. Test in a non-production tenant first.</div>
       <div class="panel">
-        <p>Requires an Entra ID App Registration, platform type <b>SPA</b>, redirect URI = this page's URL. Delegated permissions: <code>Device.Read.All, DeviceManagementManagedDevices.ReadWrite.All, DeviceManagementServiceConfig.ReadWrite.All, DeviceManagementConfiguration.Read.All, DeviceManagementApps.Read.All, User.Read, Group.Read.All, BitlockerKey.Read.All</code></p>
+        <p>Requires an Entra ID App Registration, platform type <b>SPA</b>, redirect URI = this page's URL. Delegated permissions: <code>Directory.AccessAsUser.All, Device.Read.All, DeviceManagementManagedDevices.ReadWrite.All, DeviceManagementServiceConfig.ReadWrite.All, DeviceManagementConfiguration.Read.All, DeviceManagementApps.Read.All, User.Read, Group.Read.All, BitlockerKey.Read.All</code>. Deleting Entra device objects also requires your signed-in account to hold one of these Entra roles: <b>Intune Administrator, Cloud Device Administrator, or Windows 365 Administrator</b> (Global Administrator covers everything).</p>
         <div class="field" style="margin-top:14px"><label class="hint">Client ID</label><br><input type="text" id="cfgClientId" placeholder="app registration client id" style="width:100%; margin-top:4px;"></div>
         <div class="field" style="margin-top:10px"><label class="hint">Tenant ID</label><br><input type="text" id="cfgTenantId" placeholder="tenant id" value="organizations" style="width:100%; margin-top:4px;"></div>
       </div>
@@ -264,7 +264,7 @@ let msalInstance=null, account=null;
 if(typeof msal === 'undefined'){
   window.addEventListener('DOMContentLoaded', ()=>toast("MSAL library failed to load — check your internet connection and reload the page.","error"));
 }
-const DELEGATED_SCOPES=["Device.Read.All","DeviceManagementManagedDevices.ReadWrite.All","DeviceManagementServiceConfig.ReadWrite.All","DeviceManagementConfiguration.Read.All","DeviceManagementApps.Read.All","User.Read","Group.Read.All","BitlockerKey.Read.All"];
+const DELEGATED_SCOPES=["Directory.AccessAsUser.All","Device.Read.All","DeviceManagementManagedDevices.ReadWrite.All","DeviceManagementServiceConfig.ReadWrite.All","DeviceManagementConfiguration.Read.All","DeviceManagementApps.Read.All","User.Read","Group.Read.All","BitlockerKey.Read.All"];
 
 document.getElementById('connectBtn').addEventListener('click', async ()=>{
   const clientId=document.getElementById('cfgClientId').value.trim();
