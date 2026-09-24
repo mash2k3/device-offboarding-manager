@@ -111,7 +111,7 @@ td{padding:8px; border-bottom:1px solid var(--border);}
 
     <div class="page" id="page-dashboard">
       <h2>Dashboard</h2>
-      <p class="sub">Real-time device statistics <button class="btn secondary" id="refreshDash" style="float:right">↻ Refresh</button></p>
+      <p class="sub">Real-time device statistics. Personal/Corporate and Stale tiles use the same tenant-specific heuristics as the Playbooks page (see there for details). <button class="btn secondary" id="refreshDash" style="float:right">↻ Refresh</button></p>
 
       <div class="stat-grid">
         <div class="stat-card" style="background:linear-gradient(135deg,#3b82f6,#2563eb)">
@@ -385,17 +385,10 @@ function buildFilter(field, term){
 // ===== Dashboard: exact batch from Update-DashboardStatistics, plus OS breakdown =====
 async function loadDashboard(){
   try{
-    const thirty=new Date(Date.now()-30*864e5).toISOString().replace(/\.\d+Z$/,'Z');
-    const ninety=new Date(Date.now()-90*864e5).toISOString().replace(/\.\d+Z$/,'Z');
-    const oneEighty=new Date(Date.now()-180*864e5).toISOString().replace(/\.\d+Z$/,'Z');
     const requests=[
       {id:"intune", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id"},
       {id:"autopilot", method:"GET", url:"/deviceManagement/windowsAutopilotDeviceIdentities?$count=true&$top=1"},
       {id:"entra", method:"GET", url:"/devices?$count=true&$top=1&$select=id", headers:{"ConsistencyLevel":"eventual"}},
-      {id:"stale30", method:"GET", url:`/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=lastSyncDateTime lt ${thirty}`},
-      {id:"stale90", method:"GET", url:`/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=lastSyncDateTime lt ${ninety}`},
-      {id:"stale180", method:"GET", url:`/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=lastSyncDateTime lt ${oneEighty}`},
-      {id:"personal", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=managedDeviceOwnerType eq 'personal'"},
       {id:"corporate", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=managedDeviceOwnerType eq 'company'"},
       {id:"osWindows", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=operatingSystem eq 'Windows'"},
       {id:"osmacOS", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=operatingSystem eq 'macOS'"},
@@ -410,10 +403,6 @@ async function loadDashboard(){
     document.getElementById('statIntune').textContent = intune ?? '—';
     document.getElementById('statAutopilot').textContent = getCount('autopilot') ?? '—';
     document.getElementById('statEntra').textContent = getCount('entra') ?? '—';
-    document.getElementById('stat30').textContent = getCount('stale30') ?? '—';
-    document.getElementById('stat90').textContent = getCount('stale90') ?? '—';
-    document.getElementById('stat180').textContent = getCount('stale180') ?? '—';
-    document.getElementById('statOwnership').textContent = `${getCount('personal')??'—'} / ${getCount('corporate')??'—'}`;
     document.getElementById('osWin').textContent = win ?? '—';
     document.getElementById('osMac').textContent = mac ?? '—';
     document.getElementById('osIos').textContent = ios ?? '—';
@@ -422,6 +411,26 @@ async function loadDashboard(){
     if(intune!=null && [win,mac,ios,android,linux].every(v=>v!=null)){
       document.getElementById('osOther').textContent = Math.max(0, intune-(win+mac+ios+android+linux));
     }
+
+    // Personal + Stale: same heuristic universe as the Playbooks page, since Intune's
+    // managedDeviceOwnerType='personal' and lastSyncDateTime-based staleness were both
+    // misleadingly showing 0 here — they ignored the ~39 Entra-only (unenrolled) devices.
+    log('info', 'Dashboard: building merged Intune+Entra universe for Personal and Stale tiles (same logic as the Playbooks page).');
+    const universe = await buildDeviceUniverse();
+    const personalCount = universe.filter(d=> d.source==='Entra only' || d.ownerType==='personal').length;
+    document.getElementById('statOwnership').textContent = `${personalCount} / ${getCount('corporate') ?? '—'}`;
+    const staleCount=(days)=>{
+      const cutoff = Date.now() - days*864e5;
+      return universe.filter(d=>{
+        const activity=[d.lastSync, d.lastSignIn].filter(Boolean).map(x=>new Date(x).getTime());
+        if(activity.length===0) return true;
+        return Math.max(...activity) < cutoff;
+      }).length;
+    };
+    document.getElementById('stat30').textContent = staleCount(30);
+    document.getElementById('stat90').textContent = staleCount(90);
+    document.getElementById('stat180').textContent = staleCount(180);
+
     document.getElementById('dashUpdated').textContent = 'Last refreshed: '+new Date().toLocaleTimeString();
     log('success', 'Dashboard statistics refreshed.');
   }catch(e){ toast("Dashboard error: "+e.message, "error"); }
