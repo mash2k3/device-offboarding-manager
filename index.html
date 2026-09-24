@@ -162,10 +162,10 @@ td{padding:8px; border-bottom:1px solid var(--border);}
 
     <div class="page" id="page-devices">
       <h2>Device Offboarding</h2>
-      <p class="sub">Search matches Invoke-DeviceSearch's 3 modes exactly</p>
+      <p class="sub">Search matches Invoke-DeviceSearch's 3 modes, plus wildcard support: use * as a prefix/suffix/contains wildcard, e.g. <code>WS-*</code>, <code>*-OLD</code>, or <code>*core*</code>. Device ID mode does not support wildcards (it's a direct lookup).</p>
       <div class="row">
         <select id="searchType"><option value="Device Name">Device Name</option><option value="Serial Number">Serial Number</option><option value="Device ID">Device ID (Entra object id)</option></select>
-        <input type="text" id="searchInput" placeholder="Enter search text (comma-separated for multiple)">
+        <input type="text" id="searchInput" placeholder="e.g. WS-1234, WS-*, or comma-separated for multiple">
         <button class="btn" id="searchBtn">Search</button>
       </div>
       <div class="tbl-wrap panel" style="padding:0">
@@ -180,14 +180,14 @@ td{padding:8px; border-bottom:1px solid var(--border);}
 
     <div class="page" id="page-playbooks">
       <h2>Playbooks</h2>
-      <p class="sub">Matching the original's Graph queries. If a playbook returns 0 rows, check the Logs page — it shows the exact filter and raw count returned by Graph, so you can tell a genuine zero-match from an error.</p>
+      <p class="sub">Personal, Corporate, Stale, and OS-Specific now merge Intune's managedDevices with Entra's /devices (see the Source column on each result). This catches devices whose Entra and Intune records have drifted apart, and Entra sign-in activity works regardless of Intune enrollment — but a true MAM-only device (app-protection policy, no device enrollment at all) still won't appear anywhere, since Entra's ownership field is also set by Intune. Check the Logs page for the exact queries run.</p>
       <div class="playbook-grid">
         <button class="playbook-btn" data-pb="autopilotNotIntune"><div class="icon-badge">📋</div><div><div>Autopilot Not in Intune</div><div class="pb-desc">Get-AutopilotNotIntuneDevices</div></div></button>
         <button class="playbook-btn" data-pb="intuneNotAutopilot"><div class="icon-badge">📋</div><div><div>Intune Not in Autopilot</div><div class="pb-desc">Get-IntuneNotAutopilotDevices</div></div></button>
         <button class="playbook-btn" data-pb="corporate"><div class="icon-badge">🏢</div><div><div>Corporate Devices</div><div class="pb-desc">Get-CorporateDevices</div></div></button>
         <button class="playbook-btn" data-pb="personal"><div class="icon-badge">👤</div><div><div>Personal Devices</div><div class="pb-desc">Get-PersonalDevices</div></div></button>
         <button class="playbook-btn" data-pb="stale"><div class="icon-badge">⏱</div><div><div>Stale Devices (30d)</div><div class="pb-desc">Get-StaleDevices</div></div></button>
-        <button class="playbook-btn" data-pb="osWindows"><div class="icon-badge">🖥</div><div><div>Windows Devices</div><div class="pb-desc">Get-OSSpecificDevices</div></div></button>
+        <button class="playbook-btn" data-pb="osSpecific"><div class="icon-badge">🖥</div><div><div>OS-Specific Devices</div><div class="pb-desc">Get-OSSpecificDevices</div></div></button>
       </div>
       <div id="pbResults" style="margin-top:20px"></div>
     </div>
@@ -219,6 +219,20 @@ td{padding:8px; border-bottom:1px solid var(--border);}
     <div style="display:flex; justify-content:flex-end; gap:10px;">
       <button class="btn secondary" id="cancelOffboard">Cancel</button>
       <button class="btn danger" id="confirmOffboardBtn" disabled>Confirm Offboarding</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="osModal">
+  <div class="modal" style="max-width:380px">
+    <h3>Select Operating System</h3>
+    <p class="hint" style="margin-bottom:14px">Choose the OS to filter devices by:</p>
+    <select id="osSelect" style="width:100%; padding:8px;">
+      <option>Windows</option><option>macOS</option><option>iOS</option><option>iPadOS</option><option>Android</option><option>Linux</option>
+    </select>
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+      <button class="btn secondary" id="osCancelBtn">Cancel</button>
+      <button class="btn" id="osOkBtn">OK</button>
     </div>
   </div>
 </div>
@@ -318,13 +332,13 @@ async function graphGet(path){
   log('success', `200 OK — GET ${path}`);
   return data;
 }
-async function graphAllPages(path){
+async function graphAllPages(path, extraHeaders={}){
   let results=[], url=`https://graph.microsoft.com${path}`;
   const token=await getToken();
   log('info', `GET (paged) ${path}`);
   let pageCount=0;
   while(url){
-    const res=await fetch(url,{headers:{Authorization:`Bearer ${token}`}});
+    const res=await fetch(url,{headers:{Authorization:`Bearer ${token}`, ...extraHeaders}});
     if(!res.ok){ const body=await res.text(); log('error', `HTTP ${res.status} on GET ${path} — ${body.slice(0,200)}`); throw new Error(`HTTP ${res.status}: ${body.slice(0,200)}`); }
     const data=await res.json();
     pageCount++;
@@ -357,6 +371,16 @@ async function graphBatch(requests){
   return all;
 }
 function odataEscape(v){ return v.replace(/'/g,"''"); }
+function buildFilter(field, term){
+  // Wildcard support: "ws-*" -> startswith, "*-old" -> endswith, "*core*" -> contains, else exact eq.
+  const hasLead = term.startsWith('*'), hasTrail = term.endsWith('*');
+  const stripped = term.replace(/^\*+|\*+$/g, '');
+  const esc = odataEscape(stripped);
+  if(hasLead && hasTrail) return `contains(${field},'${esc}')`;
+  if(hasTrail) return `startswith(${field},'${esc}')`;
+  if(hasLead) return `endswith(${field},'${esc}')`;
+  return `${field} eq '${esc}'`;
+}
 
 // ===== Dashboard: exact batch from Update-DashboardStatistics, plus OS breakdown =====
 async function loadDashboard(){
@@ -373,7 +397,7 @@ async function loadDashboard(){
       {id:"stale180", method:"GET", url:`/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=lastSyncDateTime lt ${oneEighty}`},
       {id:"personal", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=managedDeviceOwnerType eq 'personal'"},
       {id:"corporate", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=managedDeviceOwnerType eq 'company'"},
-      {id:"osWindows", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=startswith(operatingSystem,'Windows')"},
+      {id:"osWindows", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=operatingSystem eq 'Windows'"},
       {id:"osmacOS", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=operatingSystem eq 'macOS'"},
       {id:"osiOS", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=operatingSystem eq 'iOS'"},
       {id:"osAndroid", method:"GET", url:"/deviceManagement/managedDevices?$count=true&$top=1&$select=id&$filter=operatingSystem eq 'Android'"},
@@ -416,10 +440,10 @@ document.getElementById('searchBtn').addEventListener('click', async ()=>{
   log('info', `Search started — mode="${mode}", terms=[${terms.join(', ')}]`);
   try{
     for(const term of terms){
-      const esc=odataEscape(term);
+      const esc=odataEscape(term); const isWildcard = term.includes('*');
       if(mode==='Device Name'){
-        const entraDevices = await graphAllPages(`/beta/devices?$filter=displayName eq '${esc}'&$select=id,deviceId,displayName,operatingSystem,approximateLastSignInDateTime,accountEnabled,physicalIds`);
-        const intuneDevices = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=deviceName eq '${esc}'&$select=id,deviceName,serialNumber,operatingSystem,userDisplayName,lastSyncDateTime`);
+        const entraDevices = await graphAllPages(`/beta/devices?$filter=${buildFilter('displayName', term)}&$select=id,deviceId,displayName,operatingSystem,approximateLastSignInDateTime,accountEnabled,physicalIds`);
+        const intuneDevices = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=${buildFilter('deviceName', term)}&$select=id,deviceName,serialNumber,operatingSystem,userDisplayName,lastSyncDateTime`);
         for(const ad of entraDevices){
           const matchIntune = intuneDevices.find(d=>d.deviceName===ad.displayName);
           let matchAp=null;
@@ -437,8 +461,8 @@ document.getElementById('searchBtn').addEventListener('click', async ()=>{
             PrimaryUser:id.userDisplayName, IntuneDeviceId:id.id});
         }
       } else if(mode==='Serial Number'){
-        const intuneDevices = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=serialNumber eq '${esc}'&$select=id,deviceName,serialNumber,operatingSystem,userDisplayName,lastSyncDateTime`);
-        const apDevices = await graphAllPages(`/beta/deviceManagement/windowsAutopilotDeviceIdentities?$filter=contains(serialNumber,'${esc}')`);
+        const intuneDevices = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=${buildFilter('serialNumber', term)}&$select=id,deviceName,serialNumber,operatingSystem,userDisplayName,lastSyncDateTime`);
+        const apDevices = await graphAllPages(`/beta/deviceManagement/windowsAutopilotDeviceIdentities?$filter=contains(serialNumber,'${esc.replace(/\*/g,'')}')`);
         for(const id of intuneDevices){
           const entra = await graphAllPages(`/beta/devices?$filter=displayName eq '${odataEscape(id.deviceName)}'&$select=id,deviceId,operatingSystem`);
           const matchAp = apDevices.find(a=>a.serialNumber===id.serialNumber);
@@ -546,9 +570,38 @@ document.getElementById('confirmOffboardBtn').addEventListener('click', async ()
 });
 
 // ===== Playbooks: exact queries from the original Playbook_*.ps1 files =====
-document.querySelectorAll('.playbook-btn').forEach(btn=>btn.addEventListener('click', async ()=>{
+document.getElementById('osCancelBtn').addEventListener('click', ()=>document.getElementById('osModal').classList.remove('show'));
+document.getElementById('osOkBtn').addEventListener('click', async ()=>{
+  const osFilter = document.getElementById('osSelect').value;
+  document.getElementById('osModal').classList.remove('show');
+  await runOSSpecificPlaybook(osFilter);
+});
+async function runOSSpecificPlaybook(osFilter){
   const out=document.getElementById('pbResults'); out.innerHTML='<p class="hint">Running...</p>';
+  log('info', `Playbook started: osSpecific (${osFilter}), merging Intune + Entra`);
+  try{
+    const intune = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=operatingSystem eq '${osFilter}'&$select=deviceName,serialNumber,operatingSystem,model,osVersion,lastSyncDateTime,userDisplayName`);
+    const entra = await graphAllPages(`/beta/devices?$filter=operatingSystem eq '${osFilter}'&$select=id,displayName,operatingSystem,approximateLastSignInDateTime`, {"ConsistencyLevel":"eventual"});
+    const merged = new Map();
+    intune.forEach(d=>merged.set(d.deviceName, {name:d.deviceName, serial:d.serialNumber, os:d.operatingSystem, model:d.model, osVersion:d.osVersion, lastSync:d.lastSyncDateTime, user:d.userDisplayName, source:'Intune'}));
+    entra.forEach(d=>{
+      if(merged.has(d.displayName)) merged.get(d.displayName).source='Intune + Entra';
+      else merged.set(d.displayName, {name:d.displayName, serial:'', os:d.operatingSystem, model:'', osVersion:'', lastSync:d.approximateLastSignInDateTime, user:'', source:'Entra only'});
+    });
+    const rows = [...merged.values()].map(d=>[d.name, d.serial, d.os, d.model, d.osVersion, d.lastSync, d.user, d.source]);
+    const headers=['Device Name','Serial','OS','Model','OS Version','Last Sync/Sign-in','User','Source'];
+    const zeroNote = rows.length===0 ? ` Zero rows means both Graph queries returned empty results for operatingSystem eq '${osFilter}' — check the Logs page to confirm.` : "";
+    out.innerHTML = `<div class="tbl-wrap panel" style="padding:0"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c??''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+      <p class="hint">${rows.length} result(s) for ${osFilter}.${zeroNote}</p>`;
+    log(rows.length?'success':'warn', `Playbook osSpecific (${osFilter}) finished — ${rows.length} row(s).`);
+  }catch(e){ out.innerHTML=`<p class="hint" style="color:var(--danger)">Error: ${e.message}</p>`; toast(`Playbook osSpecific failed: ${e.message}`, "error"); }
+}
+
+document.querySelectorAll('.playbook-btn').forEach(btn=>btn.addEventListener('click', async ()=>{
   const pb=btn.dataset.pb;
+  if(pb==='osSpecific'){ document.getElementById('osModal').classList.add('show'); return; }
+  const out=document.getElementById('pbResults'); out.innerHTML='<p class="hint">Running...</p>';
   log('info', `Playbook started: ${pb}`);
   try{
     let rows=[], headers=[];
@@ -566,21 +619,34 @@ document.querySelectorAll('.playbook-btn').forEach(btn=>btn.addEventListener('cl
       headers=['Device Name','Serial','OS','User'];
     } else if(pb==='corporate' || pb==='personal'){
       const owner = pb==='corporate'?'company':'personal';
-      const all = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=managedDeviceOwnerType eq '${owner}'&$select=deviceName,serialNumber,operatingSystem,model,managedDeviceOwnerType,lastSyncDateTime`);
-      rows = all.map(d=>[d.deviceName, d.serialNumber, d.operatingSystem, d.model]);
-      headers=['Device Name','Serial','OS','Model'];
+      log('info', `Merging Intune (managedDeviceOwnerType eq '${owner}') with Entra devices, filtered client-side by deviceOwnership — Graph's deviceOwnership property does not support server-side $filter, so we fetch and filter in JS instead.`);
+      const intune = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=managedDeviceOwnerType eq '${owner}'&$select=deviceName,serialNumber,operatingSystem,model,managedDeviceOwnerType,lastSyncDateTime`);
+      const entraAll = await graphAllPages(`/beta/devices?$select=id,displayName,operatingSystem,approximateLastSignInDateTime,deviceOwnership`, {"ConsistencyLevel":"eventual"});
+      const entra = entraAll.filter(d=>d.deviceOwnership===owner);
+      log('info', `Entra: ${entraAll.length} device(s) fetched, ${entra.length} match deviceOwnership='${owner}' after client-side filtering.`);
+      const merged = new Map();
+      intune.forEach(d=>merged.set(d.deviceName, {name:d.deviceName, serial:d.serialNumber, os:d.operatingSystem, model:d.model, source:'Intune'}));
+      entra.forEach(d=>{
+        if(merged.has(d.displayName)) merged.get(d.displayName).source='Intune + Entra';
+        else merged.set(d.displayName, {name:d.displayName, serial:'', os:d.operatingSystem, model:'', source:'Entra only'});
+      });
+      rows = [...merged.values()].map(d=>[d.name, d.serial, d.os, d.model, d.source]);
+      headers=['Device Name','Serial','OS','Model','Source'];
     } else if(pb==='stale'){
       const staleDate=new Date(Date.now()-30*864e5).toISOString().replace(/\.\d+Z$/,'Z');
-      log('info', `Stale threshold: lastSyncDateTime lt ${staleDate}`);
-      const all = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=lastSyncDateTime lt ${staleDate}&$select=deviceName,serialNumber,operatingSystem,model,lastSyncDateTime`);
-      rows = all.map(d=>[d.deviceName, d.serialNumber, d.operatingSystem, d.lastSyncDateTime]);
-      headers=['Device Name','Serial','OS','Last Sync'];
-    } else if(pb==='osWindows'){
-      const all = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=startswith(operatingSystem,'Windows')&$select=deviceName,serialNumber,operatingSystem,model,osVersion,userDisplayName`);
-      rows = all.map(d=>[d.deviceName, d.serialNumber, d.osVersion, d.userDisplayName]);
-      headers=['Device Name','Serial','OS Version','User'];
+      log('info', `Merging Intune (lastSyncDateTime lt ${staleDate}) with Entra (approximateLastSignInDateTime lt ${staleDate}). Entra sign-in staleness works regardless of Intune enrollment.`);
+      const intune = await graphAllPages(`/beta/deviceManagement/managedDevices?$filter=lastSyncDateTime lt ${staleDate}&$select=deviceName,serialNumber,operatingSystem,model,lastSyncDateTime`);
+      const entra = await graphAllPages(`/beta/devices?$filter=approximateLastSignInDateTime lt ${staleDate}&$select=id,displayName,operatingSystem,approximateLastSignInDateTime`, {"ConsistencyLevel":"eventual"});
+      const merged = new Map();
+      intune.forEach(d=>merged.set(d.deviceName, {name:d.deviceName, serial:d.serialNumber, os:d.operatingSystem, activity:d.lastSyncDateTime, source:'Intune (last sync)'}));
+      entra.forEach(d=>{
+        if(merged.has(d.displayName)) merged.get(d.displayName).source='Intune + Entra';
+        else merged.set(d.displayName, {name:d.displayName, serial:'', os:d.operatingSystem, activity:d.approximateLastSignInDateTime, source:'Entra (last sign-in)'});
+      });
+      rows = [...merged.values()].map(d=>[d.name, d.serial, d.os, d.activity, d.source]);
+      headers=['Device Name','Serial','OS','Last Activity','Source'];
     }
-    const zeroNote = rows.length===0 ? " Zero rows means Graph returned an empty (but successful) result — check the Logs page to see the exact filter and confirm this matches your tenant's data." : "";
+    const zeroNote = rows.length===0 ? " Zero rows means Graph returned an empty (but successful) result — check the Logs page to see the exact filter and confirm this matches your tenant's data (MAM-only personal devices won't appear here — see Home page note)." : "";
     out.innerHTML = `<div class="tbl-wrap panel" style="padding:0"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
       <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c??''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
       <p class="hint">${rows.length} result(s).${zeroNote}</p>`;
